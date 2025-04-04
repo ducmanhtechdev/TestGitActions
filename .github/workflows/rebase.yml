@@ -1,0 +1,49 @@
+name: Rebase and Push Workflow
+
+on:
+  push:
+    branches:
+      - 'feature/*'  # Hoặc tên nhánh của bạn
+
+jobs:
+  rebase:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Bước 1: Checkout mã nguồn
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      # Bước 2: Cài đặt Git
+      - name: Set up Git
+        run: |
+          git config user.name "Ducmanhtechdev"
+          git config user.email "supermoffcial@gmail.com"
+
+      # Bước 3: Rebase nhánh vào main
+      - name: Rebase with main
+        run: |
+          git fetch origin main
+          git rebase origin/main
+        continue-on-error: true  # Không dừng lại nếu có xung đột
+
+      # Bước 4: Kiểm tra xung đột (conflict)
+      - name: Check for rebase conflicts
+        run: |
+          if git diff --check | grep -q 'conflict'; then
+            echo "There are merge conflicts, rebase failed!"
+            exit 1  # Thất bại nếu có conflict
+          fi
+
+      # Bước 5: Nếu rebase thành công, push lên nhánh main
+      - name: Push changes to main
+        run: |
+          git push origin HEAD:main
+        if: success()  # Chỉ thực hiện nếu bước rebase thành công
+
+      # Bước 6: Sau khi push thành công, pull latest từ main về nhánh hiện tại
+      - name: Pull main into feature branch
+        run: |
+          git checkout $(git rev-parse --abbrev-ref HEAD)
+          git pull origin main
+        if: success()  # Chỉ thực hiện nếu bước push thành công
